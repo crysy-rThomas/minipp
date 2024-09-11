@@ -1,3 +1,4 @@
+from typing import Optional
 from pydantic import BaseModel
 
 from models.message import Message
@@ -6,7 +7,7 @@ from models.message import Message
 class MessageSchemaCreate(BaseModel):
     content: str
     role: Message.RoleMessage
-    conversation_id: int
+    conversation_id: Optional[int] = None
 
     def to_model(self):
         return Message(

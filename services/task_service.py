@@ -1,10 +1,15 @@
 import json
+
+from models.message import Message
+from schemas.message_schema import MessageSchemaCreate
 from services.fireworks_service import FireworksService
+from services.message_service import MessageService
 
 
 class TaskService:
     def __init__(self):
         # self.task_repository = TaskRepository()
+        self.message_service = MessageService()
         self.fireworks_service = FireworksService()
         self.intent = None
         self.focus = None
@@ -13,8 +18,27 @@ class TaskService:
     def process(self, user_input):
         self.extract_data(user_input.message)
         print(self.intent)
+
+        message_user = self.message_service.create(
+            MessageSchemaCreate(
+                content=user_input.message,
+                role=Message.RoleMessage.USER,
+                conversation_id=user_input.conversation_id,
+            )
+        )
+        self.conversation_id = message_user.conversation_id
+
+        history = self.message_service.buildHistory(self.conversation_id)
+
         if self.intent == "Information":
-            return self.fireworks_service.chat(user_input.message, "Nom: Chirac, Prenom: Jacques, Age: 89")
+            # graph search with the information
+            # if not found, chat with the user
+            print(self.focus)
+            print(self.frame)
+            response = self.fireworks_service.chat(
+                history, "Nom: Chirac, Prenom: Jacques, Age: 89"
+            )
+
         elif self.intent == "Find":
             return print("Graph search or WebSearch")
         elif (
@@ -30,11 +54,19 @@ class TaskService:
         elif self.intent == "Reject":
             return print("Reject the action")
         elif self.intent == "Greet":
-            return self.fireworks_service.greeting(user_input.message)
+            response = self.fireworks_service.greeting(history)
         elif self.intent == "Goodbye":
-            return self.fireworks_service.goodbye(user_input.message)
+            response = self.fireworks_service.goodbye(history)
         else:
-            return self.fireworks_service.chat(user_input.message, "Je n'ai pas compris")
+            response = self.fireworks_service.chat(history, "Je n'ai pas compris")
+
+        message_assistant = MessageSchemaCreate(
+            content=response,
+            role=Message.RoleMessage.ASSISTANT,
+            conversation_id=self.conversation_id,
+        )
+        self.message_service.create(message_assistant)
+        return response, self.conversation_id
 
     def extract_data(self, user_input):
         try:

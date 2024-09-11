@@ -3,6 +3,7 @@ import json
 from models.message import Message
 from schemas.message_schema import MessageSchemaCreate
 from services.fireworks_service import FireworksService
+from services.knowledge_service import KnowledgeService
 from services.message_service import MessageService
 
 
@@ -11,13 +12,12 @@ class TaskService:
         # self.task_repository = TaskRepository()
         self.message_service = MessageService()
         self.fireworks_service = FireworksService()
-        self.intent = None
-        self.focus = None
-        self.frame = None
+        self.data = {}
+        self.kg = KnowledgeService()
 
     def process(self, user_input):
         self.extract_data(user_input.message)
-        print(self.intent)
+        print(self.data['Intent'])
 
         message_user = self.message_service.create(
             MessageSchemaCreate(
@@ -30,35 +30,21 @@ class TaskService:
 
         history = self.message_service.buildHistory(self.conversation_id)
 
-        if self.intent == "Information":
-            # graph search with the information
-            # if not found, chat with the user
-            print(self.focus)
-            print(self.frame)
-            response = self.fireworks_service.chat(
-                history, "Nom: Chirac, Prenom: Jacques, Age: 89"
-            )
+        intent_actions = {
+            "Information": self.handle_find,
+            "Find": self.handle_find,
+            "Create": self.handle_create_update_delete,
+            "Update": self.handle_create_update_delete,
+            "Delete": self.handle_create_update_delete,
+            "Confirm": self.handle_confirm,
+            "Reject": self.handle_reject,
+            "Greet": self.handle_greet,
+            "Goodbye": self.handle_goodbye,
+        }
 
-        elif self.intent == "Find":
-            return print("Graph search or WebSearch")
-        elif (
-            self.intent == "Create"
-            or self.intent == "Update"
-            or self.intent == "Delete"
-        ):
-            return print(
-                "Create Graph Node, based on the information , and do the action"
-            )
-        elif self.intent == "Confirm":
-            return print("Confirm the action")
-        elif self.intent == "Reject":
-            return print("Reject the action")
-        elif self.intent == "Greet":
-            response = self.fireworks_service.greeting(history)
-        elif self.intent == "Goodbye":
-            response = self.fireworks_service.goodbye(history)
-        else:
-            response = self.fireworks_service.chat(history, "Je n'ai pas compris")
+        response = intent_actions.get(self.data['Intent'], self.handle_default)(
+            history
+        )
 
         message_assistant = MessageSchemaCreate(
             content=response,
@@ -70,11 +56,35 @@ class TaskService:
 
     def extract_data(self, user_input):
         try:
-            data = json.loads(self.fireworks_service.intent_detector(user_input))
-            self.intent = data["Intent"]
-            if "Focus" in data:
-                self.focus = data["Focus"]
-            if "Frame" in data:
-                self.frame = data["Frame"]
+            self.data = json.loads(self.fireworks_service.intent_detector(user_input))
         except Exception as e:
             print(e)
+
+    def handle_find(self, history):
+        kg = self.kg.request(self.data)
+
+        response = self.fireworks_service.chat(
+            history, kg
+        )
+        return response
+
+    def handle_create_update_delete(self):
+        return self.kg.request(self.data)
+
+    def handle_confirm(self, history):
+        print("Confirm the action")
+        return
+
+    def handle_reject(self, history):
+        print("Reject the action")
+        return
+
+    def handle_greet(self, history):
+        return self.fireworks_service.greeting(history)
+
+    def handle_goodbye(self, history):
+        return self.fireworks_service.goodbye(history)
+        
+
+    def handle_default(self, history):
+        return self.fireworks_service.chat(history, "Je n'ai pas compris")

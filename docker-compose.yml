@@ -1,3 +1,5 @@
+version: '3.8'
+
 services:
   db-minipp:
     image: pgvector/pgvector:pg16
@@ -6,12 +8,26 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB}
     ports:
-      - 5432:5432
+      - "5432:5432"
     network_mode: bridge
     volumes:
       - db-minipp:/var/lib/postgresql/data
     extra_hosts:
-      - host.docker.internal:host-gateway
+      - "host.docker.internal:host-gateway"
+
+  neo4j:
+    image: neo4j:4.4
+    environment:
+      NEO4J_AUTH: ${KG_USER}/${KG_PSSWD}
+    ports:
+      - "7687:7687"
+      - "7474:7474"
+    network_mode: bridge
+    volumes:
+      - neo4j-data:/data
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
 
 volumes:
   db-minipp:
+  neo4j-data:

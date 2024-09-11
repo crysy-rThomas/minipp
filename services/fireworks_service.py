@@ -233,3 +233,30 @@ class FireworksService:
         )
         message = completion.choices[0].message.content
         return message
+
+    def generate_query(self, data):
+        preprompts = {
+            "role": "system",
+            "content": f"""You are an AI assistant that helps users by generating queries for Graph Knowledge neo4j based on their intent, focus, and frame.
+                        Here are the details:
+                        Intent: {data['Intent']}
+                        Focus: {data['Focus']}
+                        Frame: {data['Frame']}
+
+                        Generate a suitable query for the given details.
+                        Your response should be a valid Cypher query that can be executed on the Graph Knowledge neo4j database and only this.
+                        Don't say anything else than the query !
+                        """,
+        }
+        messages = [preprompts] + [{"role": "user", "content": "Generate a query"}]
+        completion = fireworks.client.ChatCompletion.create(
+            model="accounts/fireworks/models/llama-v3p1-8b-instruct",
+            messages=messages,
+            stream=False,
+            n=1,
+            max_tokens=4096,
+            temperature=0.1,
+            stop=[],
+        )
+        query = completion.choices[0].message.content
+        return query

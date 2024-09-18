@@ -20,10 +20,10 @@ class ConversationRepository:
             self.db.rollback()
             raise e
         return conversation
-    
+
     def get_all(self):
         return self.db.query(Conversation).all()
-    
+
     def delete(self, conversation: Conversation):
         try:
             self.db.delete(conversation)

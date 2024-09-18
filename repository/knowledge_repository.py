@@ -1,8 +1,6 @@
-from infrastructure.database import get_kg
+from infrastructure.kg_database import kg
 
 
 class KnowledgeRepository:
-    
-    def do(self, query):
-        with get_kg() as session:
-            return session.run(query)
+    def do(self, cypher):
+        return kg.query(cypher)

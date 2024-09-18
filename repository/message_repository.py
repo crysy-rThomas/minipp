@@ -13,9 +13,11 @@ class MessageRepository:
 
     def create(self, message: Message) -> Message:
         try:
-            number_of_messages = self.db.query(Message).filter(
-                Message.conversation_id == message.conversation_id
-            ).count()
+            number_of_messages = (
+                self.db.query(Message)
+                .filter(Message.conversation_id == message.conversation_id)
+                .count()
+            )
             message.index = number_of_messages + 1
             self.db.add(message)
             self.db.commit()

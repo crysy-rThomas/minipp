@@ -17,7 +17,7 @@ class TaskService:
 
     def process(self, user_input):
         self.extract_data(user_input.message)
-        print(self.data['Intent'])
+        print(self.data["Intent"])
 
         message_user = self.message_service.create(
             MessageSchemaCreate(
@@ -42,9 +42,7 @@ class TaskService:
             "Goodbye": self.handle_goodbye,
         }
 
-        response = intent_actions.get(self.data['Intent'], self.handle_default)(
-            history
-        )
+        response = intent_actions.get(self.data["Intent"], self.handle_default)(history)
 
         message_assistant = MessageSchemaCreate(
             content=response,
@@ -61,15 +59,14 @@ class TaskService:
             print(e)
 
     def handle_find(self, history):
-        kg = self.kg.request(self.data)
+        kg = self.kg.request(self.data, history)
 
-        response = self.fireworks_service.chat(
-            history, kg
-        )
+        response = self.fireworks_service.chat(history, kg)
         return response
 
-    def handle_create_update_delete(self):
-        return self.kg.request(self.data)
+    def handle_create_update_delete(self, history):
+        res = self.kg.request(self.data, history)
+        return self.fireworks_service.chat(history, res)
 
     def handle_confirm(self, history):
         print("Confirm the action")
@@ -84,7 +81,6 @@ class TaskService:
 
     def handle_goodbye(self, history):
         return self.fireworks_service.goodbye(history)
-        
 
     def handle_default(self, history):
         return self.fireworks_service.chat(history, "Je n'ai pas compris")

@@ -21,7 +21,7 @@ class MessageService:
 
     def get_all(self, conversation_id: int):
         return self.message_repository.get_all(conversation_id)
-    
+
     def buildHistory(self, conversation_id: int):
         messages = self.get_all(conversation_id)
         history = ""
